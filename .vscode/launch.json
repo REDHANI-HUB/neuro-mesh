@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NeuroMesh: Run Complete System",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/start_local.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "NeuroMesh: FastAPI Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "NeuroMesh: Worker Node 1",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/worker/app/main.py",
+      "env": {
+        "WORKER_ID": "worker-1"
+      },
+      "console": "integratedTerminal"
+    }
+  ]
+}

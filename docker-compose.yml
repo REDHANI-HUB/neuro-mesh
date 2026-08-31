@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: neuromesh-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: neuromesh
+      POSTGRES_PASSWORD: neuromesh_secret
+      POSTGRES_DB: neuromesh_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neuromesh -d neuromesh_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: neuromesh-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: neuromesh-backend
+    restart: always
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=neuromesh
+      - POSTGRES_PASSWORD=neuromesh_secret
+      - POSTGRES_DB=neuromesh_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: neuromesh-simulator
+    restart: always
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - BACKEND_URL=http://backend:8000
+      - STREAM_INTERVAL_MS=500
+      - DEMO_MODE=true
+    depends_on:
+      - backend
+      - redis
+
+  worker-1:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: neuromesh-worker-1
+    restart: always
+    environment:
+      - WORKER_ID=worker-1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=neuromesh
+      - POSTGRES_PASSWORD=neuromesh_secret
+      - POSTGRES_DB=neuromesh_db
+    depends_on:
+      - redis
+      - backend
+
+  worker-2:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: neuromesh-worker-2
+    restart: always
+    environment:
+      - WORKER_ID=worker-2
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=neuromesh
+      - POSTGRES_PASSWORD=neuromesh_secret
+      - POSTGRES_DB=neuromesh_db
+    depends_on:
+      - redis
+      - backend
+
+  worker-3:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: neuromesh-worker-3
+    restart: always
+    environment:
+      - WORKER_ID=worker-3
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=neuromesh
+      - POSTGRES_PASSWORD=neuromesh_secret
+      - POSTGRES_DB=neuromesh_db
+    depends_on:
+      - redis
+      - backend
+
+  aggregator:
+    build:
+      context: ./aggregator
+      dockerfile: Dockerfile
+    container_name: neuromesh-aggregator
+    restart: always
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=neuromesh
+      - POSTGRES_PASSWORD=neuromesh_secret
+      - POSTGRES_DB=neuromesh_db
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - redis
+      - postgres
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: neuromesh-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

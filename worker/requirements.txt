@@ -1,0 +1,7 @@
+numpy
+scipy
+scikit-learn
+joblib
+redis
+psutil
+psycopg2-binary
