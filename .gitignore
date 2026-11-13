@@ -26,3 +26,6 @@ data/physionet/
 # OS / Editor
 .DS_Store
 Thumbs.db
+.neon
+node_modules/
+.env.local

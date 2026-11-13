@@ -9,3 +9,4 @@ numpy
 scipy
 scikit-learn==1.7.1
 joblib
+python-dotenv
