@@ -1,0 +1,32 @@
+{
+  "model_name": "Support Vector Classifier (SVM-RBF)",
+  "model_version": "v1.0.0",
+  "training_dataset": "PhysioNet EEGMMIDB / Motor Imagery Dataset",
+  "feature_version": "MNE-Notched 68-Dim Feature Vector",
+  "accuracy": 0.6333,
+  "precision": 0.6696,
+  "recall": 0.6333,
+  "f1_score": 0.6313,
+  "classes": [
+    "LEFT_HAND",
+    "REST",
+    "RIGHT_HAND"
+  ],
+  "confusion_matrix": [
+    [
+      10,
+      0,
+      16
+    ],
+    [
+      0,
+      17,
+      0
+    ],
+    [
+      6,
+      0,
+      11
+    ]
+  ]
+}

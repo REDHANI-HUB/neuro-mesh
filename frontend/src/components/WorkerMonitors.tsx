@@ -22,89 +22,85 @@ export const WorkerMonitors: React.FC<WorkerMonitorsProps> = ({ workers }) => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      <div className="flex-between">
-        <h2 style={{ fontSize: '0.85rem', fontWeight: 800, fontFamily: 'JetBrains Mono, monospace', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Server style={{ width: '16px', height: '16px', color: 'var(--accent-cyan)' }} />
-          Containerized Worker Nodes & Distributed Pipeline Monitor
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-bold font-mono tracking-wider uppercase text-slate-800 dark:text-slate-200 flex items-center gap-2">
+          <Server className="w-4 h-4 text-sky-500" />
+          Containerized Worker Nodes & Pipeline Monitor
         </h2>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
-          3 Independent Worker Microservices
+        <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+          3 Microservice Workers
         </span>
       </div>
 
-      <div className="grid-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {displayWorkers.map((w) => {
           const isOnline = w.status === 'ONLINE';
 
           return (
-            <div key={w.worker_id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div key={w.worker_id} className="panel-card flex flex-col justify-between">
               <div>
-                <div className="flex-between" style={{ marginBottom: '0.85rem' }}>
-                  <div className="flex-row gap-2">
-                    <Cpu style={{ width: '18px', height: '18px', color: 'var(--accent-cyan)' }} />
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, fontSize: '1rem' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-sky-500" />
+                    <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
                       {w.worker_id}
                     </span>
                   </div>
-                  <span className={isOnline ? 'badge-online' : 'badge-offline'}>
+                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+                    isOnline
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                      : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                  }`}>
                     {isOnline ? '● ONLINE' : '○ OFFLINE'}
                   </span>
                 </div>
 
-                <div className="grid-2" style={{ marginBottom: '0.85rem' }}>
-                  <div className="card-inner">
-                    <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                      <CheckCircle2 style={{ width: '14px', height: '14px', color: '#10b981' }} /> Tasks Done
+                <div className="grid grid-cols-2 gap-2.5 mb-3 text-xs font-mono">
+                  <div className="inner-box">
+                    <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-1 text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Tasks Done
                     </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'JetBrains Mono, monospace' }}>
+                    <div className="text-base font-bold text-slate-900 dark:text-white">
                       {w.total_tasks_processed}
                     </div>
                   </div>
 
-                  <div className="card-inner">
-                    <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                      <Clock style={{ width: '14px', height: '14px', color: '#f59e0b' }} /> Avg Latency
+                  <div className="inner-box">
+                    <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-1 text-[11px]">
+                      <Clock className="w-3.5 h-3.5 text-amber-500" /> Avg Latency
                     </div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', fontFamily: 'JetBrains Mono, monospace' }}>
+                    <div className="text-base font-bold text-amber-600 dark:text-amber-400">
                       {w.avg_latency_ms} ms
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Resource Load Bar */}
-              <div style={{ paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.725rem', fontFamily: 'JetBrains Mono, monospace' }}>
+              {/* Dynamic Utilization Bars */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2 text-[11px] font-mono">
                 <div>
-                  <div className="flex-between" style={{ marginBottom: '0.25rem', color: 'var(--text-muted)' }}>
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
                     <span>CPU Load</span>
-                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{w.cpu_percent}%</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{w.cpu_percent}%</span>
                   </div>
-                  <div style={{ width: '100%', backgroundColor: 'var(--bg-inner)', height: '6px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                     <div
-                      style={{
-                        backgroundColor: 'var(--accent-cyan)',
-                        height: '100%',
-                        width: `${Math.min(100, Math.max(5, w.cpu_percent))}%`,
-                        transition: 'width 0.5s ease'
-                      }}
+                      className="h-full bg-sky-500 transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(4, w.cpu_percent))}%` }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex-between" style={{ marginBottom: '0.25rem', color: 'var(--text-muted)' }}>
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400 mb-1">
                     <span>RAM Memory</span>
-                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{w.memory_mb} MB</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{w.memory_mb} MB</span>
                   </div>
-                  <div style={{ width: '100%', backgroundColor: 'var(--bg-inner)', height: '6px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                     <div
-                      style={{
-                        backgroundColor: '#a855f7',
-                        height: '100%',
-                        width: `${Math.min(100, (w.memory_mb / 512) * 100)}%`,
-                        transition: 'width 0.5s ease'
-                      }}
+                      className="h-full bg-purple-500 transition-all duration-500"
+                      style={{ width: `${Math.min(100, (w.memory_mb / 512) * 100)}%` }}
                     />
                   </div>
                 </div>

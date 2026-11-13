@@ -1,3 +1,4 @@
+
 version: '3.8'
 
 services:
@@ -53,11 +54,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./worker/app:/worker/app:ro
+      - ./data:/app/data:ro
 
   simulator:
     build:
-      context: ./simulator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: simulator/Dockerfile
     container_name: neuromesh-simulator
     restart: always
     environment:
@@ -85,6 +89,8 @@ services:
       - POSTGRES_USER=neuromesh
       - POSTGRES_PASSWORD=neuromesh_secret
       - POSTGRES_DB=neuromesh_db
+    volumes:
+      - ./models:/app/models:ro
     depends_on:
       - redis
       - backend
@@ -104,6 +110,8 @@ services:
       - POSTGRES_USER=neuromesh
       - POSTGRES_PASSWORD=neuromesh_secret
       - POSTGRES_DB=neuromesh_db
+    volumes:
+      - ./models:/app/models:ro
     depends_on:
       - redis
       - backend
@@ -123,6 +131,8 @@ services:
       - POSTGRES_USER=neuromesh
       - POSTGRES_PASSWORD=neuromesh_secret
       - POSTGRES_DB=neuromesh_db
+    volumes:
+      - ./models:/app/models:ro
     depends_on:
       - redis
       - backend

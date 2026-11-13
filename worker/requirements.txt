@@ -1,7 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+redis
+pydantic
+requests
 numpy
 scipy
-scikit-learn
+scikit-learn==1.7.1
 joblib
-redis
-psutil
-psycopg2-binary

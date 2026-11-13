@@ -9,14 +9,17 @@ import { VirtualBCIDevice } from './components/VirtualBCIDevice';
 import { PredictionHistory } from './components/PredictionHistory';
 import { BenchmarkModal } from './components/BenchmarkModal';
 
-const API_BASE = 'http://localhost:8000/api';
-const WS_BASE = 'ws://localhost:8000/ws';
+const API_BASE = '/api';
+
+const WS_BASE = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
 
 export function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('neuromesh_theme') as 'dark' | 'light') || 'dark';
   });
 
+  const [backendOnline, setBackendOnline] = useState(false);
+  const [systemHealth, setSystemHealth] = useState('ONLINE');
   const [streamStatus, setStreamStatus] = useState('STOPPED');
   const [datasetMode, setDatasetMode] = useState<'DEMO' | 'PHYSIONET'>('DEMO');
   const [wsConnected, setWsConnected] = useState(false);
@@ -31,17 +34,18 @@ export function App() {
   });
 
   const [currentPrediction, setCurrentPrediction] = useState({
-    prediction: 'REST',
-    confidence: 0.91,
-    probabilities: { LEFT_HAND: 0.05, RIGHT_HAND: 0.04, REST: 0.91 },
-    worker_id: 'worker-1',
-    processing_time_ms: 22.4
+    prediction: 'N/A',
+    confidence: 0,
+    probabilities: { LEFT_HAND: 0, RIGHT_HAND: 0, REST: 0 },
+    worker_id: 'N/A',
+    processing_time_ms: 0
   });
 
+  const [latestWaveform, setLatestWaveform] = useState<number[][] | null>(null);
+  const [latestSensorPowers, setLatestSensorPowers] = useState<{ [key: string]: number } | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [benchmarkOpen, setBenchmarkOpen] = useState(false);
 
-  // Sync Theme class on document.documentElement
   useEffect(() => {
     localStorage.setItem('neuromesh_theme', theme);
     if (theme === 'dark') {
@@ -60,7 +64,16 @@ export function App() {
       const resStatus = await fetch(`${API_BASE}/status`);
       if (resStatus.ok) {
         const data = await resStatus.json();
+        setBackendOnline(true);
         setStreamStatus(data.stream_status);
+        setSystemHealth(data.system_health || 'ONLINE');
+        if (data.dataset_mode) {
+          setDatasetMode(data.dataset_mode);
+        }
+      } else {
+        setBackendOnline(false);
+        setStreamStatus('OFFLINE');
+        setSystemHealth('OFFLINE');
       }
 
       const resWorkers = await fetch(`${API_BASE}/workers`);
@@ -79,19 +92,21 @@ export function App() {
       if (resPreds.ok) {
         const data = await resPreds.json();
         setHistory(data);
-        if (data.length > 0) {
+        if (data.length > 0 && currentPrediction.prediction === 'N/A') {
           const latest = data[0];
           setCurrentPrediction({
             prediction: latest.prediction,
             confidence: latest.confidence,
-            probabilities: latest.probabilities || { LEFT_HAND: 0.05, RIGHT_HAND: 0.04, REST: 0.91 },
+            probabilities: latest.probabilities || { LEFT_HAND: 0, RIGHT_HAND: 0, REST: 0 },
             worker_id: latest.worker_id,
-            processing_time_ms: 22.0
+            processing_time_ms: 0
           });
         }
       }
     } catch (err) {
-      console.warn('API fetch notice:', err);
+      setBackendOnline(false);
+      setStreamStatus('OFFLINE');
+      setSystemHealth('OFFLINE');
     }
   };
 
@@ -116,6 +131,27 @@ export function App() {
               probabilities: data.probabilities,
               worker_id: data.worker_id,
               processing_time_ms: data.processing_time_ms
+            });
+            if (data.waveform_preview) {
+              setLatestWaveform(data.waveform_preview);
+            }
+            if (data.sensor_powers) {
+              setLatestSensorPowers(data.sensor_powers);
+            }
+            setHistory((prev) => {
+              const newItem = {
+                id: data.sequence_no || Date.now(),
+                task_id: data.task_id,
+                sequence_no: data.sequence_no,
+                worker_id: data.worker_id,
+                prediction: data.prediction,
+                confidence: data.confidence,
+                probabilities: data.probabilities,
+                timestamp: data.timestamp || new Date().toISOString()
+              };
+              const exists = prev.some((x) => x.task_id === data.task_id);
+              if (exists) return prev;
+              return [newItem, ...prev].slice(0, 50);
             });
             fetchData();
           }
@@ -143,7 +179,7 @@ export function App() {
       setStreamStatus('LIVE');
       fetchData();
     } catch (e) {
-      setStreamStatus('LIVE');
+      fetchData();
     }
   };
 
@@ -153,7 +189,7 @@ export function App() {
       setStreamStatus('STOPPED');
       fetchData();
     } catch (e) {
-      setStreamStatus('STOPPED');
+      fetchData();
     }
   };
 
@@ -162,30 +198,54 @@ export function App() {
       await fetch(`${API_BASE}/reset`, { method: 'POST' });
       setStreamStatus('STOPPED');
       setHistory([]);
+      setCurrentPrediction({
+        prediction: 'N/A',
+        confidence: 0,
+        probabilities: { LEFT_HAND: 0, RIGHT_HAND: 0, REST: 0 },
+        worker_id: 'N/A',
+        processing_time_ms: 0
+      });
+      setLatestWaveform(null);
+      setLatestSensorPowers(null);
       fetchData();
     } catch (e) {
-      setStreamStatus('STOPPED');
+      fetchData();
     }
   };
 
-  const handleToggleDatasetMode = () => {
-    setDatasetMode((prev) => (prev === 'DEMO' ? 'PHYSIONET' : 'DEMO'));
+  const handleToggleDatasetMode = async () => {
+    const nextMode = datasetMode === 'DEMO' ? 'PHYSIONET' : 'DEMO';
+    try {
+      const res = await fetch(`${API_BASE}/dataset_mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: nextMode })
+      });
+      if (res.ok) {
+        setDatasetMode(nextMode);
+      }
+    } catch (e) {
+      setDatasetMode(nextMode);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-app)] flex flex-col transition-colors duration-300">
       <Header
         streamStatus={streamStatus}
         wsConnected={wsConnected}
+        backendOnline={backendOnline}
+        systemHealth={systemHealth}
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onOpenBenchmark={() => setBenchmarkOpen(true)}
       />
 
-      <main className="flex-1 p-4 md:p-6 space-y-6 max-w-[1600px] w-full mx-auto">
+      <main className="main-content">
         <ControlPanel
           streamStatus={streamStatus}
           datasetMode={datasetMode}
+          backendOnline={backendOnline}
           onStartDemo={handleStartDemo}
           onStopDemo={handleStopDemo}
           onResetSession={handleResetSession}
@@ -204,7 +264,11 @@ export function App() {
             processingTimeMs={currentPrediction.processing_time_ms}
           />
 
-          <EEGWaveform isLive={streamStatus === 'LIVE'} />
+          <EEGWaveform
+            isLive={streamStatus === 'LIVE'}
+            waveformPreview={latestWaveform}
+            sensorPowers={latestSensorPowers}
+          />
 
           <VirtualBCIDevice prediction={currentPrediction.prediction} />
         </div>
@@ -219,8 +283,8 @@ export function App() {
         onClose={() => setBenchmarkOpen(false)}
       />
 
-      <footer className="border-t border-[var(--border-color)] bg-[var(--bg-card)] py-4 text-center text-xs font-mono text-[var(--text-muted)]">
-        NeuroMesh BCI Platform &copy; 2026 — Distributed Real-Time Processing Architecture Project
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 text-center text-xs font-mono text-slate-500 dark:text-slate-400">
+        NeuroMesh BCI Platform &copy; 2026 — Distributed Real-Time Processing Architecture Prototype
       </footer>
     </div>
   );

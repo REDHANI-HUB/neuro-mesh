@@ -7,6 +7,9 @@
 [![React](https://img.shields.io/badge/React-18.0-61dafb.svg)](https://reactjs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ed.svg)](https://www.docker.com/)
 
+> [!IMPORTANT]
+> **Academic Software Prototype Disclaimer**: NeuroMesh is a software-only distributed computing research prototype designed for academic demonstration. It is NOT a certified medical device and is not intended for clinical diagnostics or medical treatment.
+
 **NeuroMesh** is an academic software-only distributed computing system designed to solve high-volume, real-time Brain-Computer Interface (BCI) electroencephalogram (EEG) signal processing bottlenecks. By distributing continuous EEG epoch filtering, feature extraction, and machine learning inference across multiple concurrent worker nodes via a Redis message broker, NeuroMesh achieves ultra-low latency and scalable throughput.
 
 ---
@@ -87,7 +90,7 @@ NeuroMesh supports **two distinct EEG input modes**:
 
 ### Mode B: Real Dataset Mode (PhysioNet EEG Motor Movement/Imagery)
 - Integrates with the public [PhysioNet EEG Motor Movement/Imagery Dataset (eegmmidb)](https://physionet.org/content/eegmmidb/1.0.0/).
-- Real 64-channel EDF recordings are downloaded into `data/physionet/`, segmented into 2.0-second sliding windows, and fed into the task coordinator stream.
+- Bundles a preprocessed sample dataset in `data/sample/sample_eeg.json` for offline execution, with an automated downloader (`python scripts/download_dataset.py`) for additional subject recordings.
 
 ---
 
@@ -119,7 +122,7 @@ During an academic viva or evaluation, present these core distributed computing 
 
 ### Option A: Running via Docker Compose (Recommended)
 
-1. **Train the ML Model** (if not pre-trained):
+1. **Train the ML Model**:
    ```bash
    python models/train_model.py
    ```
@@ -137,7 +140,7 @@ During an academic viva or evaluation, present these core distributed computing 
 
 ### Option B: Local Multi-Process Mode (No Docker Required)
 
-1. Ensure **Redis** and **PostgreSQL** are running on your machine (or run SQLite/in-memory mode).
+1. Ensure **Redis** and **PostgreSQL** are running on your machine (or run in-memory mode).
 2. Install Python dependencies:
    ```bash
    pip install -r backend/requirements.txt
@@ -149,7 +152,7 @@ During an academic viva or evaluation, present these core distributed computing 
    ```bash
    cd frontend && npm install && cd ..
    ```
-4. Start all 6 microservices simultaneously:
+4. Start all microservices simultaneously:
    ```bash
    python start_local.py
    ```
@@ -173,7 +176,7 @@ Follow this sequence for video recorded demonstrations:
 
 1. **Step 1**: Run `docker compose up --build`. Show container startup.
 2. **Step 2**: Open `http://localhost:3000`. Show `Worker 1`, `Worker 2`, `Worker 3` as `ONLINE`.
-3. **Step 3**: Click **START DEMO**.
+3. **Step 3**: Click **START DEMO STREAM**.
 4. **Step 4**: Observe live EEG waveforms streaming on the visualizer.
 5. **Step 5**: Show worker terminal logs (`[WORKER-1] Processed task...`, `[WORKER-2]...`).
 6. **Step 6**: Highlight BCI predictions (`LEFT_HAND`, `RIGHT_HAND`, `REST`) and confidence scores.
